@@ -109,8 +109,10 @@ object_id_to_string_map = {
     "2.5.29.35": "X509v3 Authority Key Identifier",
     "2.5.29.36": "X509v3 Policy Constraints",
     "2.5.29.37": "X509v3 Extended Key Usage",
+}
 
-    # Algorithm
+# 算法
+algorithm_id_to_string_map = {
     '1.2.840.10040.4.1': 'DSA',
     "1.2.840.10040.4.3": "sha1DSA",
     "1.2.840.113549.1.1.1": "RSA",
@@ -437,12 +439,12 @@ class decoder(object):
                 elif self.count == 3:
                     print("Serial Number: {}".format(value))
                     self.count -= 1
-                elif self.tag_id_to_string(tag.nr) == "OBJECT" and value in object_id_to_string_map:
+                elif self.tag_id_to_string(tag.nr) == "OBJECT" and value in algorithm_id_to_string_map:
                     print('Algorithm: {}'.format(
-                        object_id_to_string_map[value]))
+                        algorithm_id_to_string_map[value]))
                 elif self.tag_id_to_string(tag.nr) == "OBJECT" and self.value_to_string(self, tag.nr, value) == 'countryName' and self.count == 2:
                     print('Issuer')
-                    print('{}: '.format(self.value_to_string(tag.nr, value)), end='')
+                    print('{}: '.format(self.value_to_string(self, tag.nr, value)), end='')
                     self.count -= 1
                 elif self.tag_id_to_string(tag.nr) == "OBJECT" and self.value_to_string(self, tag.nr, value) == 'countryName' and self.count == 1:
                     print('Subject')
