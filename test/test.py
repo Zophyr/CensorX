@@ -8,7 +8,7 @@ sys.path.insert(0, '../')
 
 from CensorX import censorx
 
-inputFile = open("test/test.cer", "rb")
+inputFile = open("./test.cer", "rb")
 
 decoder = censorx.decoder()
 
