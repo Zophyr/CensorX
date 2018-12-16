@@ -14,6 +14,9 @@ from builtins import bytes
 
 from enum import IntEnum
 
+import sys
+import binascii
+
 
 # 定义 asn1 数据类型
 class Numbers(IntEnum):
@@ -49,6 +52,89 @@ class Classes(IntEnum):
     Private = 0xc0
 
 
+# 定义 tag id 匹配
+tag_id_to_string_map = {
+    Numbers.Boolean: "BOOLEAN",
+    Numbers.Integer: "INTEGER",
+    Numbers.BitString: "BIT STRING",
+    Numbers.OctetString: "OCTET STRING",
+    Numbers.Null: "NULL",
+    Numbers.ObjectIdentifier: "OBJECT",
+    Numbers.PrintableString: "PRINTABLESTRING",
+    Numbers.IA5String: "IA5STRING",
+    Numbers.UTCTime: "UTCTIME",
+    Numbers.Enumerated: "ENUMERATED",
+    Numbers.Sequence: "SEQUENCE",
+    Numbers.Set: "SET"
+}
+
+# 定义四种基本类型匹配
+class_id_to_string_map = {
+    Classes.Universal: "U",
+    Classes.Application: "A",
+    Classes.Context: "C",
+    Classes.Private: "P"
+}
+
+object_id_to_string_map = {
+    "1.3.6.1.5.5.7.1.1": "authorityInfoAccess",
+
+    "2.5.4.3": "commonName",
+    "2.5.4.4": "surname",
+    "2.5.4.5": "serialNumber",
+    "2.5.4.6": "countryName",
+    "2.5.4.7": "localityName",
+    "2.5.4.8": "stateOrProvinceName",
+    "2.5.4.9": "streetAddress",
+    "2.5.4.10": "organizationName",
+    "2.5.4.11": "organizationalUnitName",
+    "2.5.4.12": "title",
+    "2.5.4.13": "description",
+    "2.5.4.42": "givenName",
+
+    "1.2.840.113549.1.9.1": "emailAddress",
+
+    "2.5.29.14": "X509v3 Subject Key Identifier",
+    "2.5.29.15": "X509v3 Key Usage",
+    "2.5.29.16": "X509v3 Private Key Usage Period",
+    "2.5.29.17": "X509v3 Subject Alternative Name",
+    "2.5.29.18": "X509v3 Issuer Alternative Name",
+    "2.5.29.19": "X509v3 Basic Constraints",
+    "2.5.29.30": "X509v3 Name Constraints",
+    "2.5.29.31": "X509v3 CRL Distribution Points",
+    "2.5.29.32": "X509v3 Certificate Policies Extension",
+    "2.5.29.33": "X509v3 Policy Mappings",
+    "2.5.29.35": "X509v3 Authority Key Identifier",
+    "2.5.29.36": "X509v3 Policy Constraints",
+    "2.5.29.37": "X509v3 Extended Key Usage",
+
+    # Algorithm
+    '1.2.840.10040.4.1': 'DSA',
+    "1.2.840.10040.4.3": "sha1DSA",
+    "1.2.840.113549.1.1.1": "RSA",
+    "1.2.840.113549.1.1.2": "md2RSA",
+    "1.2.840.113549.1.1.3": "md4RSA",
+    "1.2.840.113549.1.1.4": "md5RSA",
+    "1.2.840.113549.1.1.5": "sha1RSA",
+    '1.3.14.3.2.29': 'sha1RSA',
+    '1.2.840.113549.1.1.13': 'sha512RSA',
+    '1.2.840.113549.1.1.11': 'sha256RSA'
+}
+
+# 版本号
+version_id_to_string_map = {
+    0: 'V1',
+    1: 'V2',
+    2: 'V3'
+}
+
+# 时间
+time_id_to_string_map = {
+    0: 'not before: ',
+    1: 'not after: '
+}
+
+
 # 使用 collections 定义 Tag 对象
 # 描述 数据类型、长度、数据
 # Tag = collections.namedtuple('Tag', 'nr typ cls')
@@ -65,11 +151,31 @@ class CensorX(object):
         # 记录当前 Tag 类型
         self.m_tag = None
 
+        # 是否传入数据
+        self.m_scan = False
+
+        # 储存结果
+        self.result = ""
+
+        # 记录输出
+        self.count = 4
+
+        # 记录时间输出
+
+        self.time_count = 2
+
     # 开始解析
     # 传入相关参数
     def scan(self, data):
+        if not isinstance(data, bytes):
+            try:
+                data = data.read()
+            except OverflowError:
+                print("WRONG INPUT!")
+
         self.m_stack = [[0, bytes(data)]]
         self.m_tag = None
+        self.m_scan = True
 
     # 读取 Tag
     def peek(self):
@@ -97,7 +203,7 @@ class CensorX(object):
         return self._end_of_input()
 
     # load
-    def enter(self):
+    def load(self):
         tag = self.peek()
 
         if tag.typ != Types.Constructed:
@@ -109,7 +215,7 @@ class CensorX(object):
         self.m_tag = None
 
     # unload
-    def leave(self):  # type: () -> None
+    def unload(self):  # type: () -> None
         if len(self.m_stack) == 1:
             return
 
@@ -279,3 +385,88 @@ class CensorX(object):
     @staticmethod
     def _decode_printable_string(bytes_data):
         return bytes_data.decode('utf-8')
+
+    # 转换 tag id
+    @staticmethod
+    def tag_id_to_string(identifier):
+        if identifier in tag_id_to_string_map:
+            return tag_id_to_string_map[identifier]
+        return '{:#02x}'.format(identifier)
+
+    # 转换 class
+    @staticmethod
+    def class_id_to_string(identifier):
+        if identifier in class_id_to_string_map:
+            return class_id_to_string_map[identifier]
+        raise ValueError('Illegal class: {:#02x}'.format(identifier))
+
+    # 转换 object
+    @staticmethod
+    def object_identifier_to_string(identifier):
+        if identifier in object_id_to_string_map:
+            return object_id_to_string_map[identifier]
+        return identifier
+
+    # 转换 string
+    @staticmethod
+    def value_to_string(self, tag_number, value):
+        if tag_number == Numbers.ObjectIdentifier:
+            return self.object_identifier_to_string(value)
+        elif isinstance(value, bytes):
+            return binascii.hexlify(value).upper().decode()
+        elif isinstance(value, str):
+            return value
+        else:
+            return repr(value)
+
+    def print(self, index=0):
+        if self.m_scan == False:
+            print("Please use Scan first!")
+            return
+
+        while not self.eof():
+            tag = self.peek()
+            if tag.typ == Types.Primitive:
+                tag, value = self.analyze()
+                if self.count == 4:
+                    print("Version: {}".format(
+                        version_id_to_string_map[value]))
+                    self.count -= 1
+                elif self.count == 3:
+                    print("Serial Number: {}".format(value))
+                    self.count -= 1
+                elif self.tag_id_to_string(tag.nr) == "OBJECT" and value in object_id_to_string_map:
+                    print('Algorithm: {}'.format(
+                        object_id_to_string_map[value]))
+                elif self.tag_id_to_string(tag.nr) == "OBJECT" and self.value_to_string(self, tag.nr, value) == 'countryName' and self.count == 2:
+                    print('Issuer')
+                    print('{}: '.format(self.value_to_string(tag.nr, value)), end='')
+                    self.count -= 1
+                elif self.tag_id_to_string(tag.nr) == "OBJECT" and self.value_to_string(self, tag.nr, value) == 'countryName' and self.count == 1:
+                    print('Subject')
+                    print('{}: '.format(self.value_to_string(
+                        self, tag.nr, value)), end='')
+                    self.count -= 1
+                elif self.tag_id_to_string(tag.nr) == "UTCTIME" and self.time_count == 2:
+                    time_str = self.value_to_string(self, tag.nr, value)
+                    print('Validity not before (UTC): 20{}.{}.{} {}:{}:{} '.format(time_str[0:2], time_str[2:4],
+                                                                                   time_str[4:6], time_str[6:8], time_str[8:10], time_str[10:12]))
+                    self.time_count -= 1
+                elif self.tag_id_to_string(tag.nr) == "UTCTIME" and self.time_count == 1:
+                    time_str = self.value_to_string(self, tag.nr, value)
+                    print('Validity not after (UTC): 20{}.{}.{} {}:{}:{} '.format(time_str[0:2], time_str[2:4],
+                                                                                  time_str[4:6], time_str[6:8], time_str[8:10], time_str[10:12]))
+                    self.time_count -= 1
+                elif self.tag_id_to_string(tag.nr) == "OBJECT":
+                    print('{}: '.format(self.value_to_string(
+                        self, tag.nr, value)), end='')
+                elif self.tag_id_to_string(tag.nr) == "PRINTABLESTRING":
+                    print(self.value_to_string(self, tag.nr, value))
+                elif self.tag_id_to_string(tag.nr) == "NULL":
+                    continue
+                else:
+                    print('{}'.format(self.value_to_string(self, tag.nr, value)))
+            elif tag.typ == Types.Constructed:
+                self.load()
+                self.print(index + 2)
+                self.unload()
