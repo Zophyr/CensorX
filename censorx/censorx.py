@@ -165,7 +165,6 @@ class decoder(object):
         self.count = 4
 
         # 记录时间输出
-
         self.time_count = 2
 
     # 开始解析
@@ -444,7 +443,8 @@ class decoder(object):
                         algorithm_id_to_string_map[value]))
                 elif self.tag_id_to_string(tag.nr) == "OBJECT" and self.value_to_string(self, tag.nr, value) == 'countryName' and self.count == 2:
                     print('Issuer')
-                    print('{}: '.format(self.value_to_string(self, tag.nr, value)), end='')
+                    print('{}: '.format(self.value_to_string(
+                        self, tag.nr, value)), end='')
                     self.count -= 1
                 elif self.tag_id_to_string(tag.nr) == "OBJECT" and self.value_to_string(self, tag.nr, value) == 'countryName' and self.count == 1:
                     print('Subject')
