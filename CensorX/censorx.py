@@ -17,6 +17,8 @@ from enum import IntEnum
 import sys
 import binascii
 
+from barber import barber
+
 
 # 定义 asn1 数据类型
 class Numbers(IntEnum):
@@ -141,7 +143,7 @@ time_id_to_string_map = {
 Tag = collections.namedtuple('Tag', ["nr", "typ", "cls"])
 
 
-class CensorX(object):
+class decoder(object):
 
     # 初始化
     def __init__(self):
@@ -465,7 +467,7 @@ class CensorX(object):
                 elif self.tag_id_to_string(tag.nr) == "NULL":
                     continue
                 else:
-                    print('{}'.format(self.value_to_string(self, tag.nr, value)))
+                    print(barber.cut(self.value_to_string(self, tag.nr, value)))
             elif tag.typ == Types.Constructed:
                 self.load()
                 self.print(index + 2)
