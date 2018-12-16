@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, './')
 sys.path.insert(0, '../')
 
-from CensorX import censorx
+from censorx import censorx
 
 inputFile = open("./test.cer", "rb")
 
