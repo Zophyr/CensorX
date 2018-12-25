@@ -1,4 +1,4 @@
-# CensorX
+# CensorX · [![Build Status](https://travis-ci.com/Zophyr/CensorX.svg?branch=master)](https://travis-ci.com/Zophyr/CensorX)
 
 ⚖️ X.509 数字证书解析
 
